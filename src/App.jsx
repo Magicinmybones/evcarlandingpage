@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import DotGrid from './components/DotGrid.jsx'
 import BlinqFooter from './components/BlinqFooter.tsx'
+import BrandGrid from './components/BrandGrid.jsx'
 import PillNav from './components/PillNav.jsx'
 import ProjectsSection from './components/ProjectsSection.tsx'
 
@@ -20,8 +21,8 @@ const features = [
     eyebrow: '01 / 03',
     title: 'The swap, not the wait',
     copy: 'Guided onto the pad by the station itself, the exchange happens below the floor. A fresh pack is fitted in 90 seconds, up to 8× faster than a rapid charger.',
-    image: 'https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=1600&q=82',
-    alt: 'Electric vehicle waiting at a charger, the wait a swap removes',
+    video: '/assets/swap-not-the-wait.mp4',
+    alt: 'An automated Blinq battery swap in progress',
     label: '· BAY 01 · PAD LOCKED',
   },
   {
@@ -210,14 +211,28 @@ function FeatureStory() {
           </div>
           <div className="feature-media">
             {features.map((feature, index) => (
-              <img
-                key={feature.image}
-                className={active === index ? 'is-active' : ''}
-                src={feature.image}
-                alt={feature.alt}
-                loading="lazy"
-                decoding="async"
-              />
+              feature.video ? (
+                <video
+                  key={feature.video}
+                  className={active === index ? 'is-active' : ''}
+                  src={feature.video}
+                  aria-label={feature.alt}
+                  preload="auto"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                />
+              ) : (
+                <img
+                  key={feature.image}
+                  className={active === index ? 'is-active' : ''}
+                  src={feature.image}
+                  alt={feature.alt}
+                  loading="lazy"
+                  decoding="async"
+                />
+              )
             ))}
             <div className="media-wash" />
             <span className="check-in">· CHECK IN: 2:34 PM</span>
@@ -361,6 +376,7 @@ function App() {
       />
       <Hero />
       <Statement />
+      <BrandGrid />
       <section id="network" className="features-section" aria-label="How Blinq works">
         <FeatureStory />
       </section>

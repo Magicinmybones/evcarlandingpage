@@ -1,13 +1,12 @@
 import {
   motion,
   useInView,
-  useMotionValue,
   useScroll,
   useSpring,
   useTransform,
   type MotionValue,
 } from 'framer-motion'
-import { useRef, useState, type MouseEvent } from 'react'
+import { useRef } from 'react'
 
 const EASE = [0.22, 1, 0.36, 1] as const
 
@@ -97,78 +96,9 @@ function FloatingSquare({
   )
 }
 
-function MagneticSquare({
-  config,
-  pointerX,
-  pointerY,
-}: {
-  config: SquarePosition
-  pointerX: MotionValue<number>
-  pointerY: MotionValue<number>
-}) {
-  const [left, top, size] = config
-  const distance = Math.min(1, Math.hypot(left - 50, top - 50) / 70.7)
-  const travel = distance * 40
-  const rawX = useTransform(pointerX, [0, 1], [-travel, travel])
-  const rawY = useTransform(pointerY, [0, 1], [-travel, travel])
-  const springX = useSpring(rawX, { stiffness: 80, damping: 18, mass: 0.6 })
-  const springY = useSpring(rawY, { stiffness: 80, damping: 18, mass: 0.6 })
-
-  return (
-    <motion.span
-      className="pointer-events-none absolute z-[8] bg-[#10231F]"
-      style={{ left: `${left}%`, top: `${top}%`, width: size, height: size, x: springX, y: springY }}
-    />
-  )
-}
-
-function PixelOverlay({ hovered }: { hovered: boolean }) {
-  return (
-    <div className="pointer-events-none absolute inset-0 z-[5]">
-      {Array.from({ length: 8 }).flatMap((_, row) =>
-        Array.from({ length: 12 }).map((__, col) => {
-          const delay = hovered
-            ? (row + col) * 0.018
-            : ((8 - row) + (12 - col)) * 0.012
-          return (
-            <motion.span
-              key={`${row}-${col}`}
-              className="absolute bg-[#10231F]/80"
-              style={{
-                left: `${(col / 12) * 100}%`,
-                top: `${(row / 8) * 100}%`,
-                width: `${100 / 12 + 0.05}%`,
-                height: `${100 / 8 + 0.05}%`,
-              }}
-              initial={false}
-              animate={{ scale: hovered ? 1 : 0, opacity: hovered ? 1 : 0 }}
-              transition={{ duration: 0.25, delay, ease: EASE }}
-            />
-          )
-        }),
-      )}
-    </div>
-  )
-}
-
 function CaseStudyCard({ study, index }: { study: CaseStudy; index: number }) {
   const cardRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(cardRef, { once: true, margin: '-60px' })
-  const [hovered, setHovered] = useState(false)
-  const pointerX = useMotionValue(0.5)
-  const pointerY = useMotionValue(0.5)
-
-  const handleMove = (event: MouseEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect()
-    pointerX.set((event.clientX - rect.left) / rect.width)
-    pointerY.set((event.clientY - rect.top) / rect.height)
-  }
-
-  const handleLeave = () => {
-    setHovered(false)
-    pointerX.set(0.5)
-    pointerY.set(0.5)
-  }
 
   return (
     <motion.article
@@ -177,32 +107,28 @@ function CaseStudyCard({ study, index }: { study: CaseStudy; index: number }) {
       initial={{ opacity: 0, y: 30 }}
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
       transition={{ duration: 0.7, delay: index * 0.1, ease: EASE }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseMove={handleMove}
-      onMouseLeave={handleLeave}
     >
       <img
         src={study.image}
         alt={study.imageAlt}
-        className="absolute inset-0 h-full w-full object-cover"
+        className="project-image absolute inset-0 h-full w-full object-cover"
         loading="lazy"
         decoding="async"
       />
 
-      <PixelOverlay hovered={hovered} />
+      <span className="project-hover-wash pointer-events-none absolute inset-0 z-[5] bg-[#10231F]" aria-hidden="true" />
 
-      {study.squares.map((square, squareIndex) => (
-        <MagneticSquare
+      {study.squares.map(([left, top, size], squareIndex) => (
+        <span
+          className="project-accent-square pointer-events-none absolute z-[8] bg-[#10231F]"
           key={`${study.id}-${squareIndex}`}
-          config={square}
-          pointerX={pointerX}
-          pointerY={pointerY}
+          style={{ left: `${left}%`, top: `${top}%`, width: size, height: size }}
         />
       ))}
 
       <button
         type="button"
-        className="absolute right-4 top-4 z-10 flex h-7 w-7 items-center justify-center border border-white/30 bg-transparent text-xs text-white"
+        className="project-open absolute right-4 top-4 z-10 flex h-7 w-7 items-center justify-center border border-white/30 bg-transparent text-xs text-white"
         aria-label={`Open ${study.title} insight`}
       >
         +
@@ -231,6 +157,39 @@ export default function ProjectsSection() {
   return (
     <section id="projects" ref={sectionRef} className="projects-section relative bg-[#F2F2ED] font-display text-[#10231F]">
       <style>{`
+        .project-image,
+        .project-hover-wash,
+        .project-accent-square,
+        .project-open {
+          transition:
+            filter 280ms ease,
+            opacity 280ms ease,
+            color 220ms ease,
+            background-color 220ms ease,
+            border-color 220ms ease;
+        }
+        .project-hover-wash { opacity: 0; }
+        .project-accent-square { opacity: 0.72; }
+        @media (hover: hover) and (pointer: fine) {
+          .project-card:hover .project-image {
+            filter: saturate(0.9) brightness(0.94);
+          }
+          .project-card:hover .project-hover-wash { opacity: 0.055; }
+          .project-card:hover .project-accent-square { opacity: 0.9; }
+          .project-card:hover .project-open {
+            border-color: rgba(212, 255, 0, 0.72);
+            background: rgba(212, 255, 0, 0.12);
+            color: #D4FF00;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .project-image,
+          .project-hover-wash,
+          .project-accent-square,
+          .project-open {
+            transition: none;
+          }
+        }
         @media (min-width: 768px) {
           .projects-section {
             height: 100vh;
