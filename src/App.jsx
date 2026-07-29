@@ -1,9 +1,10 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import DotGrid from './components/DotGrid.jsx'
 import BlinqFooter from './components/BlinqFooter.tsx'
 import BrandGrid from './components/BrandGrid.jsx'
 import PillNav from './components/PillNav.jsx'
 import ProjectsSection from './components/ProjectsSection.tsx'
+import SitePreloader from './components/SitePreloader.jsx'
 
 const headline = ['Drive', 'in', 'empty,', 'drive', 'out', 'full', 'in', 'ninety', 'seconds']
 
@@ -139,7 +140,7 @@ function Hero() {
 
   return (
     <section className={`hero-scroll ${ready ? 'is-ready' : ''}`} ref={wrapRef} id="top">
-      <div className="hero-sticky">
+      <div className="hero-sticky" data-preload-background="/assets/hero-poster.jpg">
         <video
           ref={videoRef}
           className="hero-video"
@@ -373,29 +374,46 @@ function Statement() {
 }
 
 function App() {
+  const siteRef = useRef(null)
+  const [siteReady, setSiteReady] = useState(false)
+  const [loaderVisible, setLoaderVisible] = useState(true)
+  const revealSite = useCallback(() => setSiteReady(true), [])
+  const dismissLoader = useCallback(() => setLoaderVisible(false), [])
+
+  useEffect(() => {
+    if (siteRef.current) siteRef.current.inert = !siteReady
+  }, [siteReady])
+
   return (
-    <main>
-      <PillNav
-        logo="/assets/blinq-mark.svg"
-        logoAlt="Blinq"
-        items={navItems}
-        activeHref="#top"
-        ease="power2.easeOut"
-        baseColor="#D4FF00"
-        pillColor="#10231F"
-        hoveredPillTextColor="#10231F"
-        pillTextColor="#F2F2ED"
-        initialLoadAnimation
-      />
-      <Hero />
-      <Statement />
-      <BrandGrid />
-      <section id="network" className="features-section" aria-label="How Blinq works">
-        <FeatureStory />
-      </section>
-      <ProjectsSection />
-      <BlinqFooter />
-    </main>
+    <>
+      {loaderVisible && <SitePreloader onReveal={revealSite} onDismiss={dismissLoader} />}
+      <main
+        ref={siteRef}
+        className={`site-shell ${siteReady ? 'is-ready' : ''}`}
+        aria-hidden={!siteReady}
+      >
+        <PillNav
+          logo="/assets/blinq-mark.svg"
+          logoAlt="Blinq"
+          items={navItems}
+          activeHref="#top"
+          ease="power2.easeOut"
+          baseColor="#D4FF00"
+          pillColor="#10231F"
+          hoveredPillTextColor="#10231F"
+          pillTextColor="#F2F2ED"
+          initialLoadAnimation
+        />
+        <Hero />
+        <Statement />
+        <BrandGrid />
+        <section id="network" className="features-section" aria-label="How Blinq works">
+          <FeatureStory />
+        </section>
+        <ProjectsSection />
+        <BlinqFooter />
+      </main>
+    </>
   )
 }
 
