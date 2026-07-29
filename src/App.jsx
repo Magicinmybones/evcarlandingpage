@@ -107,22 +107,33 @@ function Hero() {
 
     const primeVideo = () => {
       video.pause()
-      video.currentTime = 0
+      if (video.readyState >= 1) video.currentTime = 0
       setReady(true)
     }
+    const revealPoster = () => setReady(true)
+
+    // Some CDNs and mobile browsers can delay `loadedmetadata` while they
+    // negotiate a byte-range request. Never leave the poster behind the loader
+    // indefinitely if that happens.
+    const revealFallback = window.setTimeout(() => setReady(true), 3500)
 
     updateTarget()
     window.addEventListener('scroll', updateTarget, { passive: true })
     window.addEventListener('resize', updateTarget)
-    video.addEventListener('loadedmetadata', primeVideo, { once: true })
+    video.addEventListener('loadedmetadata', primeVideo)
+    video.addEventListener('loadeddata', primeVideo)
+    video.addEventListener('error', revealPoster)
     if (video.readyState >= 1) primeVideo()
     raf = requestAnimationFrame(tick)
 
     return () => {
       cancelAnimationFrame(raf)
+      window.clearTimeout(revealFallback)
       window.removeEventListener('scroll', updateTarget)
       window.removeEventListener('resize', updateTarget)
       video.removeEventListener('loadedmetadata', primeVideo)
+      video.removeEventListener('loadeddata', primeVideo)
+      video.removeEventListener('error', revealPoster)
     }
   }, [])
 
@@ -132,13 +143,15 @@ function Hero() {
         <video
           ref={videoRef}
           className="hero-video"
-          src="/assets/hero-scroll-v14-scrub.mp4"
           poster="/assets/hero-poster.jpg"
           preload="auto"
           muted
           playsInline
           aria-label="A Blinq electric vehicle completing an automated battery swap"
-        />
+        >
+          <source src="/assets/hero-scroll-v14-scrub.mp4" type="video/mp4" />
+          <source src="/assets/hero-scroll.mp4" type="video/mp4" />
+        </video>
         <div className="hero-wash" />
         <div className="video-loader" aria-hidden="true"><span /></div>
         <div className="scroll-hint">SCROLL&nbsp;&nbsp;TO&nbsp;&nbsp;EXPLORE</div>
